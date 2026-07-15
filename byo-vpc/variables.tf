@@ -36,7 +36,7 @@ variable "rds_config" {
     allowed_security_groups         = optional(list(string), [])
     allowed_cidr_blocks             = optional(list(string), [])
     apply_immediately               = optional(bool, true)
-    monitoring_interval             = optional(number, 10)
+    monitoring_interval             = optional(number, 60)
     backtrack_window                = optional(number, null)
     db_parameter_group_name         = optional(string)
     db_parameters                   = optional(map(string), {})
@@ -123,7 +123,7 @@ variable "rds_config" {
     preferred_maintenance_window = optional(string, "thu:23:00-fri:00:00")
     skip_final_snapshot          = optional(bool, true)
     backup_retention_period      = optional(number, 7)
-    replicas                     = optional(number, 2)
+    replicas                     = optional(number, 1)
     serverless                   = optional(bool, false)
     serverless_min_capacity      = optional(number, 2)
     serverless_max_capacity      = optional(number, 10)
@@ -137,7 +137,7 @@ variable "rds_config" {
     allowed_security_groups         = []
     allowed_cidr_blocks             = []
     apply_immediately               = true
-    monitoring_interval             = 10
+    monitoring_interval             = 60
     backtrack_window                = null
     db_parameter_group_name         = null
     db_parameters                   = {}
@@ -185,7 +185,7 @@ variable "rds_config" {
     preferred_maintenance_window = "thu:23:00-fri:00:00"
     skip_final_snapshot          = true
     backup_retention_period      = 7
-    replicas                     = 2
+    replicas                     = 1
     serverless                   = false
     serverless_min_capacity      = 2
     serverless_max_capacity      = 10
@@ -228,8 +228,8 @@ variable "redis_config" {
     subnets                       = list(string)
     allowed_cidrs                 = list(string)
     availability_zones            = optional(list(string), [])
-    cluster_size                  = optional(number, 3)
-    instance_type                 = optional(string, "cache.m5.large")
+    cluster_size                  = optional(number, 2)
+    instance_type                 = optional(string, "cache.t4g.small")
     apply_immediately             = optional(bool, true)
     automatic_failover_enabled    = optional(bool, false)
     engine                        = optional(string, "redis")
@@ -287,8 +287,8 @@ variable "redis_config" {
     subnets                       = null
     allowed_cidrs                 = null
     availability_zones            = []
-    cluster_size                  = 3
-    instance_type                 = "cache.m5.large"
+    cluster_size                  = 2
+    instance_type                 = "cache.t4g.small"
     apply_immediately             = true
     automatic_failover_enabled    = false
     engine                        = "redis"
@@ -332,7 +332,7 @@ variable "ecs_cluster" {
     cluster_name = optional(string, "fleet")
     cloudwatch_log_group = optional(object({
       create            = optional(bool, true)
-      retention_in_days = optional(number, 90)
+      retention_in_days = optional(number, 30)
       kms = optional(object({
         cmk_enabled        = optional(bool, null)
         enabled            = optional(bool, null)
@@ -348,7 +348,7 @@ variable "ecs_cluster" {
       })
       }), {
       create            = true
-      retention_in_days = 90
+      retention_in_days = 30
       kms = {
         cmk_enabled        = null
         enabled            = null
@@ -359,19 +359,19 @@ variable "ecs_cluster" {
     })
     cluster_settings = optional(any, {
       "name" : "containerInsights",
-      "value" : "enabled",
+      "value" : "disabled",
     })
     create                                = optional(bool, true)
     default_capacity_provider_use_fargate = optional(bool, true)
     fargate_capacity_providers = optional(any, {
       FARGATE = {
         default_capacity_provider_strategy = {
-          weight = 100
+          weight = 50
         }
       }
       FARGATE_SPOT = {
         default_capacity_provider_strategy = {
-          weight = 0
+          weight = 50
         }
       }
     })
@@ -390,7 +390,7 @@ variable "ecs_cluster" {
     cluster_name = "fleet"
     cloudwatch_log_group = {
       create            = true
-      retention_in_days = 90
+      retention_in_days = 30
       kms = {
         cmk_enabled = false
         kms_key_arn = null
@@ -399,19 +399,19 @@ variable "ecs_cluster" {
     }
     cluster_settings = {
       "name" : "containerInsights",
-      "value" : "enabled",
+      "value" : "disabled",
     }
     create                                = true
     default_capacity_provider_use_fargate = true
     fargate_capacity_providers = {
       FARGATE = {
         default_capacity_provider_strategy = {
-          weight = 100
+          weight = 50
         }
       }
       FARGATE_SPOT = {
         default_capacity_provider_strategy = {
-          weight = 0
+          weight = 50
         }
       }
     }

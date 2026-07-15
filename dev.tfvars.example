@@ -1,0 +1,64 @@
+# Dev/Staging cost-optimized overrides (~$150-250/mo vs ~$800-1000/mo with production defaults)
+# Apply with: terraform apply -var-file="dev.tfvars.example"
+
+# RDS: single instance, no replicas, no enhanced monitoring, no performance insights
+rds_config = {
+  instance_class                  = "db.t4g.medium"
+  replicas                        = 0
+  monitoring_interval             = 0
+  performance_insights_enabled    = false
+  backup_retention_period         = 1
+  skip_final_snapshot             = true
+}
+
+# Redis: single node, smallest instance
+redis_config = {
+  cluster_size   = 1
+  instance_type  = "cache.t4g.small"
+}
+
+# ECS: Fargate Spot only, no container insights, short log retention
+ecs_cluster = {
+  cloudwatch_log_group = {
+    retention_in_days = 7
+  }
+  cluster_settings = {
+    name  = "containerInsights"
+    value = "disabled"
+  }
+  fargate_capacity_providers = {
+    FARGATE = {
+      default_capacity_provider_strategy = {
+        weight = 0
+      }
+    }
+    FARGATE_SPOT = {
+      default_capacity_provider_strategy = {
+        weight = 100
+      }
+    }
+  }
+}
+
+# Fleet: single task, lower resources
+fleet_config = {
+  mem = 2048
+  cpu = 256
+  autoscaling = {
+    min_capacity = 1
+    max_capacity = 1
+  }
+  awslogs = {
+    retention = 3
+  }
+}
+
+# VPC: disable NAT gateway if using VPC endpoints or don't need outbound internet
+# vpc = {
+#   enable_nat_gateway = false
+# }
+
+# ALB: disable deletion protection for easy teardown
+alb_config = {
+  enable_deletion_protection = false
+}

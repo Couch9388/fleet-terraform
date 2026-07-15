@@ -1,3 +1,17 @@
+# Cost optimization defaults (production-sensible):
+#   - RDS: 1 replica (HA), db.t4g.large, monitoring_interval=60s
+#   - Redis: 2 nodes (HA), cache.t4g.small
+#   - Fargate: 50% FARGATE / 50% FARGATE_SPOT
+#   - Container Insights: disabled
+#   - ECS log retention: 30 days
+#   - VPC flow logs: disabled
+#
+# For dev/staging, override with aggressive savings:
+#   rds_config = { replicas = 0, monitoring_interval = 0, performance_insights_enabled = false }
+#   redis_config = { cluster_size = 1 }
+#   ecs_cluster = { fargate_capacity_providers = { FARGATE_SPOT = { default_capacity_provider_strategy = { weight = 100 } } } }
+#   vpc = { enable_nat_gateway = false }
+
 locals {
   vpc_flow_log_cloudwatch_log_group_cmk_enabled    = var.vpc.flow_log_cloudwatch_log_group_kms.cmk_enabled
   vpc_flow_log_cloudwatch_log_group_create_kms_key = var.vpc.enable_flow_log == true && var.vpc.create_flow_log_cloudwatch_log_group == true && local.vpc_flow_log_cloudwatch_log_group_cmk_enabled == true && var.vpc.flow_log_cloudwatch_log_group_kms.kms_key_arn == null
