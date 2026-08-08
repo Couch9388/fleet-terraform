@@ -7,13 +7,13 @@ locals {
     name      = k
     valueFrom = v
   }]
-  load_balancers = concat([
+  load_balancers = concat(var.fleet_config.loadbalancer.arn != null ? [
     {
       target_group_arn = var.fleet_config.loadbalancer.arn
       container_name   = "fleet"
       container_port   = 8080
     }
-  ], var.fleet_config.extra_load_balancers)
+  ] : [], var.fleet_config.extra_load_balancers)
   repository_credentials = var.fleet_config.repository_credentials != "" ? {
     repositoryCredentials = {
       credentialsParameter = var.fleet_config.repository_credentials
@@ -27,6 +27,18 @@ locals {
     var.fleet_config.private_key_secret_kms.kms_key_arn != null ? var.fleet_config.private_key_secret_kms.kms_key_arn : (local.private_key_secret_create_kms_key == true ? aws_kms_key.private_key_secret[0].arn : null)
   ) : null
 
+  # When awslogs.create == false and no external log group name is provided,
+  # omit logConfiguration entirely so the container runs with no log driver
+  # (maximum cost savings, no CloudWatch Logs charges).
+  application_logs_enabled = var.fleet_config.awslogs.create == true || var.fleet_config.awslogs.name != null
+  log_configuration = local.application_logs_enabled ? {
+    logDriver = "awslogs"
+    options = {
+      awslogs-group         = var.fleet_config.awslogs.create == true ? aws_cloudwatch_log_group.main[0].name : var.fleet_config.awslogs.name
+      awslogs-region        = var.fleet_config.awslogs.create == true ? data.aws_region.current.region : var.fleet_config.awslogs.region
+      awslogs-stream-prefix = var.fleet_config.awslogs.prefix
+    }
+  } : null
   application_logs_cmk_enabled    = coalesce(var.fleet_config.awslogs.kms.cmk_enabled, var.fleet_config.awslogs.kms.enabled, false)
   application_logs_create_kms_key = var.fleet_config.awslogs.create == true && local.application_logs_cmk_enabled == true && var.fleet_config.awslogs.kms.kms_key_arn == null
   application_logs_kms_key_arn = var.fleet_config.awslogs.create == true && local.application_logs_cmk_enabled == true ? (
@@ -248,14 +260,6 @@ resource "aws_ecs_task_definition" "backend" {
           ]
           repositoryCredentials = local.repository_credentials
           networkMode           = "awsvpc"
-          logConfiguration = {
-            logDriver = "awslogs"
-            options = {
-              awslogs-group         = var.fleet_config.awslogs.create == true ? aws_cloudwatch_log_group.main[0].name : var.fleet_config.awslogs.name
-              awslogs-region        = var.fleet_config.awslogs.create == true ? data.aws_region.current.region : var.fleet_config.awslogs.region
-              awslogs-stream-prefix = var.fleet_config.awslogs.prefix
-            }
-          }
           ulimits = [
             {
               name      = "nofile"
@@ -326,6 +330,9 @@ resource "aws_ecs_task_definition" "backend" {
               value = local.private_key_secret_arn
           }] : [], local.environment)
         },
+        local.log_configuration != null ? {
+          logConfiguration = local.log_configuration
+        } : {},
         var.fleet_config.command != null ? {
           command = var.fleet_config.command
         } : {}

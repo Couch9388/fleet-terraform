@@ -1,7 +1,7 @@
 locals {
   fleet_config = merge(var.fleet_config, {
     loadbalancer = {
-      arn = module.alb.target_groups["tg-0"].arn
+      arn = var.alb_config.enabled ? module.alb[0].target_groups["tg-0"].arn : null
     },
     networking = merge(var.fleet_config.networking, {
       subnets         = var.fleet_config.networking.subnets
@@ -9,7 +9,7 @@ locals {
       ingress_sources = {
         cidr_blocks      = var.fleet_config.networking.ingress_sources.cidr_blocks
         ipv6_cidr_blocks = var.fleet_config.networking.ingress_sources.ipv6_cidr_blocks
-        security_groups  = concat(var.fleet_config.networking.ingress_sources.security_groups, [module.alb.security_group_id])
+        security_groups  = var.alb_config.enabled ? concat(var.fleet_config.networking.ingress_sources.security_groups, [module.alb[0].security_group_id]) : var.fleet_config.networking.ingress_sources.security_groups
         prefix_list_ids  = var.fleet_config.networking.ingress_sources.prefix_list_ids
       }
       assign_public_ip = var.fleet_config.networking.assign_public_ip
@@ -424,13 +424,15 @@ module "alb" {
   source  = "terraform-aws-modules/alb/aws"
   version = "9.17.0"
 
+  count = var.alb_config.enabled ? 1 : 0
+
   name = var.alb_config.name
 
   load_balancer_type = "application"
 
   vpc_id                     = var.vpc_id
   subnets                    = var.alb_config.subnets
-  security_groups            = concat(var.alb_config.security_groups, [aws_security_group.alb.id])
+  security_groups            = concat(var.alb_config.security_groups, [aws_security_group.alb[0].id])
   access_logs                = var.alb_config.access_logs
   idle_timeout               = var.alb_config.idle_timeout
   internal                   = var.alb_config.internal
@@ -501,6 +503,7 @@ module "alb" {
 
 resource "aws_security_group" "alb" {
   #checkov:skip=CKV2_AWS_5:False positive
+  count       = var.alb_config.enabled ? 1 : 0
   vpc_id      = var.vpc_id
   description = "Fleet ALB Security Group"
   ingress {

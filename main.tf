@@ -193,7 +193,9 @@ module "byo-vpc" {
   vpc_config = {
     vpc_id = module.vpc.vpc_id
     networking = {
-      subnets = module.vpc.private_subnets
+      # Use private subnets when available; fall back to public subnets so
+      # ECS tasks with assign_public_ip = true work in no-NAT deployments.
+      subnets = length(module.vpc.private_subnets) > 0 ? module.vpc.private_subnets : module.vpc.public_subnets
     }
   }
   rds_configs = {

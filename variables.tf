@@ -170,7 +170,9 @@ variable "vpc" {
 }
 
 variable "certificate_arn" {
-  type = string
+  type        = string
+  default     = null
+  description = "ACM certificate ARN for the ALB HTTPS listener. Not required when alb_config.enabled = false."
 }
 
 variable "kms_base_policy" {
@@ -537,6 +539,10 @@ variable "active_rds_config_name" {
 
 variable "redis_config" {
   type = object({
+    # Set enabled = false to skip creating the ElastiCache cluster entirely
+    # (cost savings). Fleet then receives an empty FLEET_REDIS_ADDRESS and
+    # falls back to in-memory caching, suitable for small deployments.
+    enabled                       = optional(bool, true)
     name                          = optional(string, "fleet")
     replication_group_id          = optional(string)
     elasticache_subnet_group_name = optional(string)
@@ -1078,6 +1084,11 @@ variable "migration_config" {
 
 variable "alb_config" {
   type = object({
+    # Set enabled = false to skip creating the ALB entirely (cost savings).
+    # In that case the Fleet ECS service is exposed directly via its task
+    # public IP (fleet_config.networking.assign_public_ip must be true and
+    # the VPC should have no private subnets so tasks land in public ones).
+    enabled            = optional(bool, true)
     name               = optional(string, "fleet")
     security_groups    = optional(list(string), [])
     access_logs        = optional(map(string), {})

@@ -511,11 +511,15 @@ variable "migration_config" {
 
 variable "alb_config" {
   type = object({
+    # Set enabled = false to skip creating the ALB entirely (cost savings).
+    # In that case the Fleet ECS service is exposed directly via its task
+    # public IP (fleet_config.networking.assign_public_ip must be true).
+    enabled            = optional(bool, true)
     name               = optional(string, "fleet")
-    subnets            = list(string)
+    subnets            = optional(list(string), [])
     security_groups    = optional(list(string), [])
     access_logs        = optional(map(string), {})
-    certificate_arn    = string
+    certificate_arn    = optional(string, null)
     allowed_cidrs      = optional(list(string), ["0.0.0.0/0"])
     allowed_ipv6_cidrs = optional(list(string), ["::/0"])
     egress_cidrs       = optional(list(string), ["0.0.0.0/0"])

@@ -12,7 +12,7 @@ output "rds_clusters" {
 }
 
 output "redis" {
-  value = module.redis
+  value = var.redis_config.enabled ? module.redis[0] : null
 }
 
 output "secrets" {

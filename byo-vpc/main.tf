@@ -805,7 +805,7 @@ module "byo-db" {
       password_secret_kms_key_arn = local.rds_password_secret_kms_key_arns[var.active_rds_config_name]
     }
     redis = {
-      address = "${module.redis.endpoint}:${module.redis.port}"
+      address = var.redis_config.enabled ? "${module.redis[0].endpoint}:${module.redis[0].port}" : ""
     }
     networking = {
       subnets          = var.vpc_config.networking.subnets
@@ -912,6 +912,8 @@ resource "aws_security_group_rule" "rds_ecs_ingress" {
 module "redis" {
   source  = "cloudposse/elasticache-redis/aws"
   version = ">= 1.9.1"
+
+  count = var.redis_config.enabled ? 1 : 0
 
   name                          = var.redis_config.name
   replication_group_id          = var.redis_config.replication_group_id == null ? var.redis_config.name : var.redis_config.replication_group_id
