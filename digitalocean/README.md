@@ -10,6 +10,62 @@ This Terraform project automates the deployment of Fleet Device Management (Flee
 * **DNS** — Domain and CNAME record for Fleet
 * **Database Firewalls** — Restricts database and cache access to the App Platform app only
 
+## Using Your Own Image
+
+By default, the module deploys the official `fleetdm/fleet` image from Docker Hub. To deploy your own image (e.g., a custom Fleet build), set `image_tag` in `fleet_config` to a full image reference:
+
+### Docker Hub (public)
+
+```hcl
+fleet_config = {
+  image_tag = "your-org/your-fleet:v1.0.0"
+  # ...
+}
+```
+
+### Docker Hub (private)
+
+```hcl
+fleet_config = {
+  image_tag                  = "your-org/your-fleet:v1.0.0"
+  image_registry_credentials = "your-username:your-access-token" # Don't commit this!
+  # ...
+}
+```
+
+Pass the credentials at deploy time instead of committing them:
+
+```bash
+terraform apply -var-file="fleet-10.tfvars" \
+  -var="fleet_config={image_tag:\"your-org/your-fleet:v1.0.0\",image_registry_credentials:\"$DOCKERHUB_USER:$DOCKERHUB_TOKEN\",instance_size_slug:\"basic-xs\",instance_count:1,debug_logging:false,exec_migration:true}"
+```
+
+### DigitalOcean Container Registry (DOCR)
+
+Push your image to DOCR first:
+
+```bash
+# One-time: create a registry and log in
+doctl registry create my-registry
+doctl registry login
+
+# Build, tag, and push your image
+docker build -t registry.digitalocean.com/my-registry/fleet:v1.0.0 .
+docker push registry.digitalocean.com/my-registry/fleet:v1.0.0
+```
+
+Then reference it:
+
+```hcl
+fleet_config = {
+  image_tag            = "registry.digitalocean.com/my-registry/fleet:v1.0.0"
+  image_deploy_on_push = true  # Optional: redeploy automatically on every push
+  # ...
+}
+```
+
+The module detects the registry automatically from the `image_tag` prefix — anything starting with `registry.digitalocean.com/` uses DOCR, everything else uses Docker Hub. The migration job uses the same image.
+
 ## Prerequisites
 
 1. **Terraform:** Version `~> 1.11`. Install from [terraform.io](https://www.terraform.io/downloads.html).

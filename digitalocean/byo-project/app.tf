@@ -4,6 +4,22 @@ resource "random_password" "private_key" {
 }
 
 locals {
+  # --------------------------------------------------------------------------
+  # Image parsing — supports Docker Hub and DigitalOcean Container Registry
+  #
+  # Accepted formats for var.fleet_config.image_tag:
+  #   "fleetdm/fleet:v4.90.0"                           → Docker Hub (official)
+  #   "your-org/your-image:v1.0.0"                      → Docker Hub (custom)
+  #   "registry.digitalocean.com/<registry>/<repo>:tag" → DOCR
+  # --------------------------------------------------------------------------
+  image_tag_parts   = split(":", var.fleet_config.image_tag)
+  image_name_part   = local.image_tag_parts[0]
+  image_tag_part    = length(local.image_tag_parts) > 1 ? local.image_tag_parts[length(local.image_tag_parts) - 1] : "latest"
+  image_segments    = split("/", local.image_name_part)
+  image_is_docr     = local.image_segments[0] == "registry.digitalocean.com"
+  image_repository  = local.image_segments[length(local.image_segments) - 1]
+  image_dh_registry = join("/", slice(local.image_segments, 0, length(local.image_segments) - 1))
+
   base_env_vars = {
     FLEET_MYSQL_PROTOCOL = "tcp"
     FLEET_MYSQL_ADDRESS  = "${local.mysql_host}:${local.mysql_port}"
@@ -60,10 +76,19 @@ resource "digitalocean_app" "fleet" {
       http_port          = 8080
 
       image {
-        registry_type = "DOCKER_HUB"
-        registry      = "fleetdm"
-        repository    = "fleet"
-        tag           = trimprefix(var.fleet_config.image_tag, "fleetdm/fleet:")
+        registry_type        = local.image_is_docr ? "DOCR" : "DOCKER_HUB"
+        registry             = local.image_is_docr ? null : local.image_dh_registry
+        repository           = local.image_repository
+        tag                  = local.image_tag_part
+        registry_credentials = var.fleet_config.image_registry_credentials
+
+        # Auto-deploy on push is only supported for DOCR
+        dynamic "deploy_on_push" {
+          for_each = local.image_is_docr && var.fleet_config.image_deploy_on_push ? [1] : []
+          content {
+            enabled = true
+          }
+        }
       }
 
       health_check {
@@ -107,10 +132,11 @@ resource "digitalocean_app" "fleet" {
         instance_size_slug = var.fleet_config.instance_size_slug
 
         image {
-          registry_type = "DOCKER_HUB"
-          registry      = "fleetdm"
-          repository    = "fleet"
-          tag           = trimprefix(var.fleet_config.image_tag, "fleetdm/fleet:")
+          registry_type        = local.image_is_docr ? "DOCR" : "DOCKER_HUB"
+          registry             = local.image_is_docr ? null : local.image_dh_registry
+          repository           = local.image_repository
+          tag                  = local.image_tag_part
+          registry_credentials = var.fleet_config.image_registry_credentials
         }
 
         run_command = "fleet prepare db --no-prompt=true"

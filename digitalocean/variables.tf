@@ -28,15 +28,27 @@ variable "vpc_config" {
 }
 
 variable "fleet_config" {
-  description = "Configuration for the Fleet application deployment on App Platform."
+  description = <<-EOT
+    Configuration for the Fleet application deployment on App Platform.
+
+    image_tag accepts a full image reference:
+      - Docker Hub: "fleetdm/fleet:v4.90.0" (default, official image)
+      - Docker Hub custom: "your-org/your-image:v1.0.0"
+      - DOCR: "registry.digitalocean.com/your-registry/your-image:v1.0.0"
+
+    image_registry_credentials: "username:token" for private Docker Hub repos.
+    image_deploy_on_push: auto-deploy when a new image is pushed (DOCR only).
+  EOT
   type = object({
-    image_tag          = string
-    instance_size_slug = string
-    instance_count     = number
-    license_key        = optional(string)
-    debug_logging      = bool
-    exec_migration     = bool
-    extra_env_vars     = optional(map(string))
+    image_tag                  = string
+    image_registry_credentials = optional(string)
+    image_deploy_on_push       = optional(bool, false)
+    instance_size_slug         = string
+    instance_count             = number
+    license_key                = optional(string)
+    debug_logging              = bool
+    exec_migration             = bool
+    extra_env_vars             = optional(map(string))
   })
   default = {
     image_tag          = "fleetdm/fleet:v4.90.0"

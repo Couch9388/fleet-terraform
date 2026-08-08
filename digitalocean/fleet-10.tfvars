@@ -27,7 +27,18 @@
 # $10/month — plenty for 10 devices
 # ----------------------------------------------------------------------------
 fleet_config = {
-  image_tag          = "fleetdm/fleet:v4.90.0"
+  # Image — use the official Fleet image or your own:
+  #   Official:            "fleetdm/fleet:v4.90.0"
+  #   Custom Docker Hub:   "your-org/your-fleet:v1.0.0"
+  #   DigitalOcean DOCR:   "registry.digitalocean.com/your-registry/fleet:v1.0.0"
+  image_tag = "fleetdm/fleet:v4.90.0"
+
+  # For private Docker Hub repos:
+  # image_registry_credentials = "your-username:your-token"
+
+  # For DOCR: auto-deploy when you push a new image
+  # image_deploy_on_push = true
+
   instance_size_slug = "basic-xs"  # 1 GiB RAM, $10/mo
   instance_count     = 1
   debug_logging      = false

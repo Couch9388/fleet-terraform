@@ -24,15 +24,17 @@ variable "vpc_config" {
 }
 
 variable "fleet_config" {
-  description = "Configuration for the Fleet application deployment."
+  description = "Configuration for the Fleet application deployment. image_tag accepts full image references from Docker Hub or DOCR."
   type = object({
-    image_tag          = string
-    instance_size_slug = string
-    instance_count     = number
-    license_key        = optional(string)
-    debug_logging      = bool
-    exec_migration     = bool
-    extra_env_vars     = optional(map(string))
+    image_tag                  = string
+    image_registry_credentials = optional(string)
+    image_deploy_on_push       = optional(bool, false)
+    instance_size_slug         = string
+    instance_count             = number
+    license_key                = optional(string)
+    debug_logging              = bool
+    exec_migration             = bool
+    extra_env_vars             = optional(map(string))
   })
 }
 

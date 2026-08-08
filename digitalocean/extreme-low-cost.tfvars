@@ -27,7 +27,13 @@
 # App Platform — smallest possible instance
 # ----------------------------------------------------------------------------
 fleet_config = {
+  # Image — use the official Fleet image or your own:
+  #   Official:            "fleetdm/fleet:v4.90.0"
+  #   Custom Docker Hub:   "your-org/your-fleet:v1.0.0"
+  #   DigitalOcean DOCR:   "registry.digitalocean.com/your-registry/fleet:v1.0.0"
   image_tag          = "fleetdm/fleet:v4.90.0"
+  # image_registry_credentials = "your-username:your-token"  # private Docker Hub
+  # image_deploy_on_push = true                              # DOCR only
   instance_size_slug = "basic-xxs"  # $5/mo — 512 MiB, 1 shared vCPU
   instance_count     = 1
   debug_logging      = false
