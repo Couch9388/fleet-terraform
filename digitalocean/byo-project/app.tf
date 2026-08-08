@@ -4,16 +4,12 @@ resource "random_password" "private_key" {
 }
 
 locals {
-  fleet_env_vars = merge(var.fleet_config.extra_env_vars, {
+  base_env_vars = {
     FLEET_MYSQL_PROTOCOL = "tcp"
-    FLEET_MYSQL_ADDRESS  = "${digitalocean_database_cluster.mysql.host}:${digitalocean_database_cluster.mysql.port}"
-    FLEET_MYSQL_USERNAME = digitalocean_database_user.fleet.name
-    FLEET_MYSQL_DATABASE = digitalocean_database_db.fleet.name
-    FLEET_MYSQL_PASSWORD = digitalocean_database_user.fleet.password
-
-    FLEET_REDIS_ADDRESS  = "${digitalocean_database_cluster.cache.host}:${digitalocean_database_cluster.cache.port}"
-    FLEET_REDIS_USE_TLS  = "true"
-    FLEET_REDIS_PASSWORD = digitalocean_database_cluster.cache.password
+    FLEET_MYSQL_ADDRESS  = "${local.mysql_host}:${local.mysql_port}"
+    FLEET_MYSQL_USERNAME = local.mysql_user
+    FLEET_MYSQL_DATABASE = local.mysql_database
+    FLEET_MYSQL_PASSWORD = local.mysql_password
 
     FLEET_SERVER_PRIVATE_KEY = random_password.private_key.result
 
@@ -22,11 +18,21 @@ locals {
     FLEET_S3_SOFTWARE_INSTALLERS_REGION              = var.region
     FLEET_S3_SOFTWARE_INSTALLERS_FORCE_S3_PATH_STYLE = "false"
 
-    FLEET_LOGGING_JSON   = "true"
-    FLEET_LOGGING_DEBUG  = tostring(var.fleet_config.debug_logging)
-    FLEET_SERVER_TLS     = "false"
-    FLEET_SERVER_SERVER  = "true"
-  })
+    FLEET_LOGGING_JSON  = "true"
+    FLEET_LOGGING_DEBUG = tostring(var.fleet_config.debug_logging)
+    FLEET_SERVER_TLS    = "false"
+    FLEET_SERVER_SERVER = "true"
+  }
+
+  # Redis env vars — only included when cache is enabled
+  redis_env_vars = local.cache_enabled ? {
+    FLEET_REDIS_ADDRESS  = "${local.cache_host}:${local.cache_port}"
+    FLEET_REDIS_USE_TLS  = "true"
+    FLEET_REDIS_PASSWORD = local.cache_password
+  } : {}
+
+  # Merge all env vars
+  fleet_env_vars = merge(local.base_env_vars, local.redis_env_vars, var.fleet_config.extra_env_vars)
 }
 
 resource "digitalocean_app" "fleet" {
@@ -142,8 +148,6 @@ resource "digitalocean_app" "fleet" {
   }
 
   depends_on = [
-    digitalocean_database_cluster.mysql,
-    digitalocean_database_cluster.cache,
     digitalocean_spaces_bucket.software_installers,
   ]
 }

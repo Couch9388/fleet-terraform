@@ -37,7 +37,7 @@ variable "fleet_config" {
 }
 
 variable "database_config" {
-  description = "Configuration for the managed MySQL database cluster."
+  description = "Configuration for the MySQL database. Set node_count=0 to use a self-hosted Droplet instead of managed."
   type = object({
     name                = string
     engine              = string
@@ -47,6 +47,7 @@ variable "database_config" {
     database_name       = string
     database_user       = string
     deletion_protection = optional(bool, false)
+    droplet_size        = optional(string, "s-1vcpu-512mb")
   })
 }
 

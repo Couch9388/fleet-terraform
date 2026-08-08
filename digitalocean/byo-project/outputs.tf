@@ -19,28 +19,38 @@ output "app_default_ingress" {
 }
 
 output "database_host" {
-  description = "The hostname of the MySQL database cluster."
-  value       = digitalocean_database_cluster.mysql.host
+  description = "The hostname of the MySQL database."
+  value       = local.mysql_host
 }
 
 output "database_port" {
-  description = "The port of the MySQL database cluster."
-  value       = digitalocean_database_cluster.mysql.port
+  description = "The port of the MySQL database."
+  value       = local.mysql_port
 }
 
 output "database_user" {
   description = "The MySQL database user for Fleet."
-  value       = digitalocean_database_user.fleet.name
+  value       = local.mysql_user
+}
+
+output "database_mode" {
+  description = "Whether the database is 'managed' or 'self-hosted'."
+  value       = var.database_config.node_count >= 1 ? "managed" : "self-hosted"
 }
 
 output "cache_host" {
-  description = "The hostname of the Valkey cache cluster."
-  value       = digitalocean_database_cluster.cache.host
+  description = "The hostname of the Valkey cache cluster (empty if disabled)."
+  value       = local.cache_host
 }
 
 output "cache_port" {
-  description = "The port of the Valkey cache cluster."
-  value       = digitalocean_database_cluster.cache.port
+  description = "The port of the Valkey cache cluster (0 if disabled)."
+  value       = local.cache_port
+}
+
+output "cache_enabled" {
+  description = "Whether the managed cache is enabled."
+  value       = local.cache_enabled
 }
 
 output "spaces_bucket_name" {
@@ -66,4 +76,9 @@ output "dns_record_fqdn" {
 output "domain_name_servers" {
   description = "The name servers for the DigitalOcean DNS zone. Delegate your domain to these."
   value       = ["ns1.digitalocean.com", "ns2.digitalocean.com", "ns3.digitalocean.com"]
+}
+
+output "mysql_droplet_ip" {
+  description = "The private IP of the self-hosted MySQL Droplet (only when node_count=0)."
+  value       = var.database_config.node_count == 0 ? digitalocean_droplet.mysql[0].ipv4_address_private : null
 }

@@ -143,7 +143,32 @@ graph TD
 | DNS | Route53 | Cloud DNS | DigitalOcean DNS |
 | TLS | ACM | Managed SSL | Automatic (Let's Encrypt) |
 
-## Cost Estimate
+## Cost Tiers
+
+### 10 Devices (~$30/month) — Recommended
+
+Use `fleet-10.tfvars` or the deployment script:
+
+```bash
+# Quick deploy with script
+../scripts/deploy-digitalocean.sh
+
+# Or manually
+terraform plan -var="domain_name=fleet.your-domain.com" -var-file="fleet-10.tfvars"
+terraform apply
+```
+
+| Resource | Size | Monthly Cost |
+|----------|------|-------------|
+| App Platform | basic-xs (1 GiB) × 1 | ~$10 |
+| Managed MySQL | db-s-1vcpu-1gb × 1 | ~$15 |
+| Spaces | 250 GB included | ~$5 |
+| VPC, DNS, TLS | — | Free |
+| **Total** | | **~$30/month** |
+
+### Full Stack (~$47/month) — Default
+
+For larger deployments or when you need Redis caching:
 
 | Resource | Size | Monthly Cost |
 |----------|------|-------------|
@@ -151,9 +176,26 @@ graph TD
 | Managed MySQL | db-s-1vcpu-1gb × 1 | ~$15 |
 | Managed Valkey | db-s-1vcpu-1gb × 1 | ~$15 |
 | Spaces | 250 GB included | ~$5 |
-| VPC | Free | $0 |
-| DNS | Free | $0 |
+| VPC, DNS, TLS | — | Free |
 | **Total** | | **~$47/month** |
+
+### Low-Cost (~$32/month)
+
+Managed MySQL without cache:
+
+```bash
+terraform plan -var="domain_name=fleet.your-domain.com" -var-file="low-cost.tfvars"
+```
+
+### Extreme Low-Cost (~$10/month)
+
+Self-hosted MySQL on Droplet, smallest app instance, no cache:
+
+```bash
+terraform plan -var="domain_name=fleet.your-domain.com" -var-file="extreme-low-cost.tfvars"
+```
+
+**⚠️ Warning:** Extreme mode runs MySQL on a Droplet without managed backups. Not recommended for production device data.
 
 ## Cleaning Up
 
